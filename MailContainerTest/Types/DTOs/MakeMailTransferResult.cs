@@ -1,4 +1,4 @@
-﻿namespace MailContainerTest.Types
+﻿namespace MailContainerTest.Types.DTOs
 {
     public class MakeMailTransferResult
     {

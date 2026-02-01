@@ -1,8 +1,8 @@
 ﻿using MailContainerTest.Types;
 
-namespace MailContainerTest.Data
+namespace MailContainerTest.DataStores
 {
-    public class BackupMailContainerDataStore
+    public class BackupMailContainerDataStore : IMailContainerDataStore
     {
         public MailContainer GetMailContainer(string mailContainerNumber)
         {

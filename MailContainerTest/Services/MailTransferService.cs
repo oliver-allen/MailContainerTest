@@ -1,93 +1,39 @@
-﻿using MailContainerTest.Data;
-using MailContainerTest.Types;
-using System.Configuration;
+﻿using MailContainerTest.Factories;
+using MailContainerTest.Types.DTOs;
+using MailContainerTest.Validators;
 
 namespace MailContainerTest.Services
 {
     public class MailTransferService : IMailTransferService
     {
+        private readonly IMailContainerDataStoreFactory _mailContainerDataStoreFactory;
+        private readonly IMailTransferValidator _mailTransferValidator;
+
+        public MailTransferService(IMailContainerDataStoreFactory mailContainerDataStoreFactory, IMailTransferValidator mailTransferValidator)
+        {
+            _mailContainerDataStoreFactory = mailContainerDataStoreFactory;
+            _mailTransferValidator = mailTransferValidator;
+        }
+
         public MakeMailTransferResult MakeMailTransfer(MakeMailTransferRequest request)
         {
-            var dataStoreType = ConfigurationManager.AppSettings["DataStoreType"];
-
-            MailContainer mailContainer = null;
-
-            if (dataStoreType == "Backup")
-            {
-                var mailContainerDataStore = new BackupMailContainerDataStore();
-                mailContainer = mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
-
-            } else
-            {
-                var mailContainerDataStore = new MailContainerDataStore();
-                mailContainer = mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
-            }
-
-            var result = new MakeMailTransferResult();
-
-            switch (request.MailType)
-            {
-                case MailType.StandardLetter:
-                    if (mailContainer == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!mailContainer.AllowedMailType.HasFlag(AllowedMailType.StandardLetter))
-                    {
-                        result.Success = false;
-                    }
-                    break;
-
-                case MailType.LargeLetter:
-                    if (mailContainer == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!mailContainer.AllowedMailType.HasFlag(AllowedMailType.LargeLetter))
-                    {
-                        result.Success = false;
-                    }
-                    else if (mailContainer.Capacity < request.NumberOfMailItems)
-                    {
-                        result.Success = false;
-                    }
-                    break;
-
-                case MailType.SmallParcel:
-                    if (mailContainer == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!mailContainer.AllowedMailType.HasFlag(AllowedMailType.SmallParcel))
-                    {
-                        result.Success = false;
-
-                    }
-                    else if (mailContainer.Status != MailContainerStatus.Operational)
-                    {
-                        result.Success = false;
-                    }
-                    break;
-            }
-
-            if (result.Success)
+            // NOTE: This factory pattern should likely be moved into the infrustrcutre
+            // layer and an IMailContainerDataStore would be injected into this class instead.
+            var mailContainerDataStore = _mailContainerDataStoreFactory.CreateDataStore();
+            var mailContainer = mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
+            
+            var isValidForTransfer = _mailTransferValidator.IsValidForTransfer(mailContainer, request);
+            if (isValidForTransfer)
             {
                 mailContainer.Capacity -= request.NumberOfMailItems;
-
-                if (dataStoreType == "Backup")
-                {
-                    var mailContainerDataStore = new BackupMailContainerDataStore();
-                    mailContainerDataStore.UpdateMailContainer(mailContainer);
-
-                }
-                else
-                {
-                    var mailContainerDataStore = new MailContainerDataStore();
-                    mailContainerDataStore.UpdateMailContainer(mailContainer);
-                }
+                mailContainerDataStore.UpdateMailContainer(mailContainer);
             }
 
-            return result;
+            // NOTE: Not dealing with the destination mail container as it wasn't in the original code.
+            return new MakeMailTransferResult()
+            {
+                Success = isValidForTransfer
+            };
         }
     }
 }

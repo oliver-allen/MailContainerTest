@@ -1,4 +1,4 @@
-﻿using MailContainerTest.Types;
+﻿using MailContainerTest.Types.DTOs;
 
 namespace MailContainerTest.Services
 {
