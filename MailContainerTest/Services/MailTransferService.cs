@@ -17,7 +17,7 @@ namespace MailContainerTest.Services
 
         public MakeMailTransferResult MakeMailTransfer(MakeMailTransferRequest request)
         {
-            // NOTE: This factory pattern should likely be moved into the infrustrcutre
+            // NOTE: This factory pattern should likely be moved into the infrastructure
             // layer and an IMailContainerDataStore would be injected into this class instead.
             var mailContainerDataStore = _mailContainerDataStoreFactory.CreateDataStore();
             var mailContainer = mailContainerDataStore.GetMailContainer(request.SourceMailContainerNumber);
